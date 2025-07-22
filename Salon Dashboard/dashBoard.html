@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <img src="media/logo.png" alt="Luxe Salon Logo" class="h-10 w-auto object-contain" />
+                <div>    
+                    <h1 class="text-3xl font-bold text-gray-900">Appointments Dashboard</h1>
+                    <p class="text-gray-600">Manage and view all appointments</p>
+                </div>
+                <button 
+                    id="refreshBtn"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                >
+                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div class="flex items-center space-x-2">
+            <i data-lucide="refresh-cw" class="h-6 w-6 animate-spin text-blue-600"></i>
+            <span class="text-gray-600">Loading appointments...</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center">
+                    <i data-lucide="calendar" class="h-10 w-10 text-blue-600"></i>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Appointments</p>
+                        <p id="totalAppointments" class="text-3xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center">
+                    <i data-lucide="clock" class="h-10 w-10 text-green-600"></i>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Today's Appointments</p>
+                        <p id="todayAppointments" class="text-3xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center">
+                    <i data-lucide="settings" class="h-10 w-10 text-purple-600"></i>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Upcoming</p>
+                        <p id="upcomingAppointments" class="text-3xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border mb-8">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5"></i>
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="Search by name, email, or service..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+                <div class="sm:w-48">
+                    <select
+                        id="serviceFilter"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">All Services</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-400 p-4 mb-8">
+            <div class="flex">
+                <div class="ml-3">
+                    <p id="errorText" class="text-sm text-red-700"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Table -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-sort="id">
+                                ID <span id="sort-id" class="sort-indicator"></span>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-sort="fullname">
+                                Full Name <span id="sort-fullname" class="sort-indicator"></span>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-sort="email">
+                                Email <span id="sort-email" class="sort-indicator"></span>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-sort="service">
+                                Service <span id="sort-service" class="sort-indicator"></span>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-sort="appointment_date">
+                                Date <span id="sort-appointment_date" class="sort-indicator"></span>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-sort="appointment_time">
+                                Time <span id="sort-appointment_time" class="sort-indicator"></span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <i data-lucide="calendar" class="mx-auto h-12 w-12 text-gray-400"></i>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No appointments found</h3>
+                <p id="emptyStateMessage" class="mt-1 text-sm text-gray-500">
+                    No appointments have been scheduled yet.
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-sm text-gray-500">
+            Showing <span id="filteredCount">0</span> of <span id="totalCount">0</span> appointments
+        </div>
+    </div>
+    
+    <script>
+        // Configuration - Replace with your actual Supabase credentials
+        
+
+        // Global state
+        let appointments = [];
+        let filteredAppointments = [];
+        let currentSort = { column: 'appointment_date', order: 'desc' };
+
+        // DOM elements
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const mainContent = document.getElementById('mainContent');
+        const searchInput = document.getElementById('searchInput');
+        const serviceFilter = document.getElementById('serviceFilter');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const emptyState = document.getElementById('emptyState');
+        const emptyStateMessage = document.getElementById('emptyStateMessage');
+        const appointmentsTableBody = document.getElementById('appointmentsTableBody');
+
+        // Utility functions
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const date = new Date();
+            date.setHours(parseInt(hours), parseInt(minutes));
+            return date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function getTodayString() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // Fetch appointments function
+        async function fetchAppointments() {
+            showLoading();
+            hideError();
+
+            try {
+                const response = await fetch(`https://pelins-backend.onrender.com/api/appointments`);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch appointments: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                appointments = data;
+
+                updateStats();
+                populateServiceFilter();
+                filterAndDisplayAppointments();
+                hideLoading();
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showError(error.message);
+                hideLoading();
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const today = getTodayString();
+            const totalAppointments = appointments.length;
+            const todayAppointments = appointments.filter(app => app.appointment_date === today).length;
+            const upcomingAppointments = appointments.filter(app => new Date(app.appointment_date) > new Date()).length;
+
+            document.getElementById('totalAppointments').textContent = totalAppointments;
+            document.getElementById('todayAppointments').textContent = todayAppointments;
+            document.getElementById('upcomingAppointments').textContent = upcomingAppointments;
+        }
+
+        // Populate service filter dropdown
+        function populateServiceFilter() {
+            const services = [...new Set(appointments.map(app => app.service))];
+            const currentValue = serviceFilter.value;
+            
+            serviceFilter.innerHTML = '<option value="">All Services</option>';
+            services.forEach(service => {
+                const option = document.createElement('option');
+                option.value = service;
+                option.textContent = service;
+                serviceFilter.appendChild(option);
+            });
+            
+            serviceFilter.value = currentValue;
+        }
+
+        // Filter and sort appointments
+        function filterAndDisplayAppointments() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const serviceFilterValue = serviceFilter.value;
+
+            // Filter appointments
+            filteredAppointments = appointments.filter(appointment => {
+                const matchesSearch = appointment.fullname.toLowerCase().includes(searchTerm) ||
+                                    appointment.email.toLowerCase().includes(searchTerm) ||
+                                    appointment.service.toLowerCase().includes(searchTerm);
+                const matchesFilter = serviceFilterValue === '' || appointment.service === serviceFilterValue;
+                return matchesSearch && matchesFilter;
+            });
+
+            // Sort appointments
+            filteredAppointments.sort((a, b) => {
+                let aVal = a[currentSort.column];
+                let bVal = b[currentSort.column];
+                
+                // Handle different data types
+                if (currentSort.column === 'id') {
+                    aVal = parseInt(aVal);
+                    bVal = parseInt(bVal);
+                } else if (currentSort.column === 'appointment_date') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                } else if (currentSort.column === 'appointment_time') {
+                    aVal = new Date(`1970-01-01 ${aVal}`);
+                    bVal = new Date(`1970-01-01 ${bVal}`);
+                } else {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (currentSort.order === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+
+            displayAppointments();
+            updateFooter();
+        }
+
+        // Display appointments in table
+        function displayAppointments() {
+            if (filteredAppointments.length === 0) {
+                appointmentsTableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                
+                const hasSearchOrFilter = searchInput.value || serviceFilter.value;
+                emptyStateMessage.textContent = hasSearchOrFilter 
+                    ? 'Try adjusting your search or filter criteria.'
+                    : 'No appointments have been scheduled yet.';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            
+            appointmentsTableBody.innerHTML = filteredAppointments.map(appointment => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #${appointment.id}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i data-lucide="user" class="h-5 w-5 text-gray-400 mr-2"></i>
+                            <span class="text-sm font-medium text-gray-900">${appointment.fullname}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i data-lucide="mail" class="h-5 w-5 text-gray-400 mr-2"></i>
+                            <span class="text-sm text-gray-600">${appointment.email}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            ${appointment.service}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i data-lucide="calendar" class="h-4 w-4 text-gray-400 mr-2"></i>
+                            <span class="text-sm text-gray-900">${formatDate(appointment.appointment_date)}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i data-lucide="clock" class="h-4 w-4 text-gray-400 mr-2"></i>
+                            <span class="text-sm text-gray-900">${formatTime(appointment.appointment_time)}</span>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Re-initialize Lucide icons for the new content
+            lucide.createIcons();
+        }
+
+        // Update footer counts
+        function updateFooter() {
+            document.getElementById('filteredCount').textContent = filteredAppointments.length;
+            document.getElementById('totalCount').textContent = appointments.length;
+        }
+
+        // Sort functionality
+        function handleSort(column) {
+            if (currentSort.column === column) {
+                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.order = 'asc';
+            }
+
+            updateSortIndicators();
+            filterAndDisplayAppointments();
+        }
+
+        // Update sort indicators
+        function updateSortIndicators() {
+            // Clear all sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = '';
+            });
+
+            // Set current sort indicator
+            const indicator = document.getElementById(`sort-${currentSort.column}`);
+            if (indicator) {
+                indicator.textContent = currentSort.order === 'asc' ? '↑' : '↓';
+            }
+        }
+
+        // UI state functions
+        function showLoading() {
+            loadingSpinner.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+        }
+
+        function hideLoading() {
+            loadingSpinner.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+        }
+
+        function showError(message) {
+            errorText.textContent = `Error: ${message}`;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Fetch appointments on page load
+            fetchAppointments();
+
+            // Search input
+            searchInput.addEventListener('input', filterAndDisplayAppointments);
+
+            // Service filter
+            serviceFilter.addEventListener('change', filterAndDisplayAppointments);
+
+            // Refresh button
+            refreshBtn.addEventListener('click', fetchAppointments);
+
+            // Sort functionality
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    handleSort(th.getAttribute('data-sort'));
+                });
+            });
+
+            // Initialize sort indicators
+            updateSortIndicators();
+        });
+    </script>
+</body>
+</html>

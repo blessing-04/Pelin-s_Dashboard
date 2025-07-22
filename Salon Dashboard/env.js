@@ -1,0 +1,3 @@
+// env.js
+const SUPABASE_URL_PELIN = "https://qekrfhgmndjqwcveyroe.supabase.co";
+const SUPABASE_KEY_PELIN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFla3JmaGdtbmRqcXdjdmV5cm9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NzMyMjMsImV4cCI6MjA2ODQ0OTIyM30.fGE_uBAWXrpqpYaRNZV9y0ki9LJblkfthcPp8Jk69Xg";
