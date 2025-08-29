@@ -21,7 +21,7 @@
                     id="refreshBtn"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                 >
-                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                    <i id="refreshIcon" data-lucide="refresh-cw" class="h-4 w-4"></i>
                     <span>Refresh</span>
                 </button>
             </div>
@@ -29,7 +29,7 @@
     </div>
 
     <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div id="loadingSpinner" class="min-h-screen bg-gray-50 flex items-center justify-center hidden">
         <div class="flex items-center space-x-2">
             <i data-lucide="refresh-cw" class="h-6 w-6 animate-spin text-blue-600"></i>
             <span class="text-gray-600">Loading appointments...</span>
@@ -152,9 +152,6 @@
     </div>
     
     <script>
-        // Configuration - Replace with your actual Supabase credentials
-        
-
         // Global state
         let appointments = [];
         let filteredAppointments = [];
@@ -166,6 +163,7 @@
         const searchInput = document.getElementById('searchInput');
         const serviceFilter = document.getElementById('serviceFilter');
         const refreshBtn = document.getElementById('refreshBtn');
+        const refreshIcon = document.getElementById('refreshIcon');
         const errorMessage = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
         const emptyState = document.getElementById('emptyState');
@@ -270,7 +268,6 @@
                 let aVal = a[currentSort.column];
                 let bVal = b[currentSort.column];
                 
-                // Handle different data types
                 if (currentSort.column === 'id') {
                     aVal = parseInt(aVal);
                     bVal = parseInt(bVal);
@@ -348,7 +345,6 @@
                 </tr>
             `).join('');
 
-            // Re-initialize Lucide icons for the new content
             lucide.createIcons();
         }
 
@@ -373,12 +369,10 @@
 
         // Update sort indicators
         function updateSortIndicators() {
-            // Clear all sort indicators
             document.querySelectorAll('.sort-indicator').forEach(indicator => {
                 indicator.textContent = '';
             });
 
-            // Set current sort indicator
             const indicator = document.getElementById(`sort-${currentSort.column}`);
             if (indicator) {
                 indicator.textContent = currentSort.order === 'asc' ? '↑' : '↓';
@@ -389,11 +383,17 @@
         function showLoading() {
             loadingSpinner.classList.remove('hidden');
             mainContent.classList.add('hidden');
+
+            // spin refresh icon
+            refreshIcon.classList.add('animate-spin');
         }
 
         function hideLoading() {
             loadingSpinner.classList.add('hidden');
             mainContent.classList.remove('hidden');
+
+            // stop spinning refresh icon
+            refreshIcon.classList.remove('animate-spin');
         }
 
         function showError(message) {
@@ -407,29 +407,24 @@
 
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Lucide icons
             lucide.createIcons();
-
-            // Fetch appointments on page load
             fetchAppointments();
 
-            // Search input
             searchInput.addEventListener('input', filterAndDisplayAppointments);
-
-            // Service filter
             serviceFilter.addEventListener('change', filterAndDisplayAppointments);
 
             // Refresh button
-            refreshBtn.addEventListener('click', fetchAppointments);
+            refreshBtn.addEventListener('click', () => {
+                showLoading();
+                fetchAppointments();
+            });
 
-            // Sort functionality
             document.querySelectorAll('th[data-sort]').forEach(th => {
                 th.addEventListener('click', () => {
                     handleSort(th.getAttribute('data-sort'));
                 });
             });
 
-            // Initialize sort indicators
             updateSortIndicators();
         });
     </script>
